@@ -91,7 +91,7 @@ public class LoginApp {
         if (user.login(loginUsername, loginPassword)) {
             System.out.println(user.getWelcomeMessage(loginUsername,loginPassword));
         } else {
-            System.out.println("Login failed. Please check your credentials and try again.");
+            System.out.println("Login has failed. Please check your credentials and try again.");
         }
         //This is to avoid memory leaks
         scanner.close();
