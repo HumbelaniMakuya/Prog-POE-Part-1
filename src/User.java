@@ -36,6 +36,7 @@ public class User {
     }
 
     // Validates that the cell number meets stated requirements
+    //OpenAI, 2025. Regex for South African phone number validation [online] ChatGPT. Available at: https://chat.openai.com [Accessed 18 September 2025].
     public boolean isCellNumberValid() {
         return cellNumber.matches("^\\+27\\d{9}$");
     }
