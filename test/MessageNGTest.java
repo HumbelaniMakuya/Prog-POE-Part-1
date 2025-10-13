@@ -39,7 +39,7 @@ public class MessageNGTest {
         }
     }
 
-    // Test Data
+    
     Message msg1 = new Message(
             "user1",
             "Mike Jones",
