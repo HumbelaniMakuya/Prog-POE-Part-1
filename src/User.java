@@ -7,7 +7,6 @@
  *
  * @author RC_Student_lab
  */
-// This class stores user details and handles validation and login logic
 public class User {
     private String username;
     private String password;
@@ -15,7 +14,6 @@ public class User {
     private String firstName;
     private String lastName;
 
-    // This is used to  to initialise user details
     public User(String username, String password, String cellNumber, String firstName, String lastName) {
         this.username = username;
         this.password = password;
@@ -24,36 +22,71 @@ public class User {
         this.lastName = lastName;
     }
 
-    // Checks if the username contains "_" and is no more than 5 characters
-    public boolean isUsernameValid() {
+    // Instance methods (keep your current ones)
+    public boolean checkUserName() {
         return username.contains("_") && username.length() <= 5;
     }
 
-    // Checks if the password is complex enough
-    
-    public boolean isPasswordComplex() {
+    public String getUsernameFeedback() {
+        return checkUserName() ? "Username successfully captured." :
+               "Username is not correctly formatted. Please ensure it contains an underscore and is no more than five characters.";
+    }
+
+    public boolean checkPasswordComplexity() {
         return password.matches("^(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()_+\\-=]).{8,}$");
     }
 
-    // Validates that the cell number meets stated requirements
-    //OpenAI, 2025. Regex for South African phone number validation [online] ChatGPT. Available at: https://chat.openai.com [Accessed 18 September 2025].
-    public boolean isCellNumberValid() {
+    public String getPasswordFeedback() {
+        return checkPasswordComplexity() ? "Password successfully captured." :
+               "Password is not correctly formatted. Please ensure it has at least 8 characters, one uppercase letter, one number, and one special character.";
+    }
+
+    public boolean checkCellPhoneNumber() {
         return cellNumber.matches("^\\+27\\d{9}$");
     }
 
-    // Checks if the login credentials match the stored ones
-    public boolean login(String inputUsername, String inputPassword) {
+    public String getCellNumberFeedback() {
+        return checkCellPhoneNumber() ? "Cell phone number successfully added." :
+               "Cell phone number incorrectly formatted. It must start with +27.";
+    }
+
+    public boolean loginUser(String inputUsername, String inputPassword) {
         return this.username.equals(inputUsername) && this.password.equals(inputPassword);
     }
 
-    // Returns a personalised welcome message
-    public String getWelcomeMessage(String inputUsername, String inputPassword) {
-    if (login(inputUsername, inputPassword)) {
-        return "Welcome " + firstName + "  " + lastName + " great to have you back";
-    } else {
-        return "Incorrect username or password, please attempt again";
+    public String returnLoginStatus(String inputUsername, String inputPassword) {
+        if (loginUser(inputUsername, inputPassword)) {
+            return "Welcome " + firstName + " " + lastName + ", it is great to see you again.";
+        } else {
+            return "Login failed. Please check your credentials.";
+        }
     }
 
+    public String getFullName() {
+        return firstName + " " + lastName;
+    }
 
+    public String getUsername() {
+        return username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    // ----------------------------
+    // Static validation methods for JOptionPane flow
+    // ----------------------------
+
+    public static boolean checkUserNameStatic(String username) {
+        return username != null && username.contains("_") && username.length() <= 5;
+    }
+
+    public static boolean checkPasswordComplexityStatic(String password) {
+        return password != null && password.matches("^(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()_+\\-=]).{8,}$");
+    }
+
+    public static boolean checkCellPhoneNumberStatic(String cellNumber) {
+        return cellNumber != null && cellNumber.matches("^\\+27\\d{9}$");
     }
 }
