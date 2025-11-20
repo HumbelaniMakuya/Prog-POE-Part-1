@@ -8,28 +8,25 @@
  * @author RC_Student_Lab
  */
 import java.io.FileWriter;
-import java.io.FileReader;
-import java.io.BufferedReader;
 import java.io.IOException;
+import java.util.Random;
 
+/**
+ * Message class for creating, validating, hashing, and storing messages.
+ */
 public class Message {
-    private String senderUsername;
-    private String senderFullName;
-    private String recipientCell;
+    private final String senderUsername;
+    private final String senderFullName;
+    private final String recipientCell;
     private String messageContent;
-    private int messageNumber;
-    private String messageID; // Auto-generated
+    private final int messageNumber;
 
-    // Static variables to track sent messages and total
-    private static String allMessages = "";
-    private static int totalMessages = 0;
+    private String messageID;
+    private String messageHash;
 
-    // File for JSON storage
     private static final String JSON_FILE = "stored_messages.json";
 
-    // ----------------------------
-    // Constructor
-    // ----------------------------
+    // Constructor for new messages
     public Message(String senderUsername, String senderFullName, String recipientCell,
                    String messageContent, int messageNumber) {
         this.senderUsername = senderUsername;
@@ -37,144 +34,127 @@ public class Message {
         this.recipientCell = recipientCell;
         this.messageContent = messageContent;
         this.messageNumber = messageNumber;
-        this.messageID = "MSG" + messageNumber;
+        this.messageID = generate10DigitID();
+        this.messageHash = createMessageHash();
     }
 
-    // ----------------------------
-    // 1️⃣ checkMessageID()
-    // ----------------------------
+    // Constructor for loading from JSON (preserves ID/hash)
+    public Message(String senderUsername, String senderFullName, String recipientCell,
+                   String messageContent, int messageNumber, String messageID, String messageHash) {
+        this.senderUsername = senderUsername;
+        this.senderFullName = senderFullName;
+        this.recipientCell = recipientCell;
+        this.messageContent = messageContent;
+        this.messageNumber = messageNumber;
+        this.messageID = (messageID == null || messageID.isEmpty()) ? generate10DigitID() : messageID;
+        this.messageHash = (messageHash == null || messageHash.isEmpty()) ? createMessageHash() : messageHash;
+    }
+
+    // Generate random 10-digit ID
+    private String generate10DigitID() {
+        Random rnd = new Random();
+        long n = Math.abs(rnd.nextLong()) % 10_000_000_000L;
+        return String.format("%010d", n);
+    }
+
+    // Validation methods
     public boolean checkMessageID() {
         return messageID != null && messageID.length() <= 10;
     }
 
-    // ----------------------------
-    // 2️⃣ checkRecipientCell() - +27 format
-    // ----------------------------
     public int checkRecipientCell() {
         return (recipientCell != null && recipientCell.matches("^\\+27\\d{9}$")) ? 1 : 0;
     }
 
-    // ----------------------------
-    // 3️⃣ createMessageHash()
-    // ----------------------------
+    // Hash creation: first 2 digits of ID + ":" + messageNumber + ":" + FIRST+LAST words uppercase
     public String createMessageHash() {
-        int hash = (senderUsername + recipientCell + messageContent).hashCode();
-        return "MSG-" + Math.abs(hash);
+        String id = (messageID == null) ? "" : messageID;
+        String prefix = (id.length() >= 2) ? id.substring(0, 2) : "00";
+        String trimmed = (messageContent == null) ? "" : messageContent.trim();
+        if (trimmed.isEmpty()) return prefix + ":" + messageNumber + ":";
+        String[] words = trimmed.split("\\s+");
+        String firstWord = words[0].replaceAll("[^A-Za-z0-9]", "");
+        String lastWord = words[words.length - 1].replaceAll("[^A-Za-z0-9]", "");
+        return prefix + ":" + messageNumber + ":" + (firstWord + lastWord).toUpperCase();
     }
 
-    // ----------------------------
-    // 4️⃣ SentMessage() - prevents >250 chars
-    // ----------------------------
+    public boolean checkMessageLength() {
+        return messageContent != null && messageContent.length() <= 250;
+    }
+
+    public String getMessageLengthFeedback() {
+        if (checkMessageLength()) return "Message ready to send.";
+        int excess = (messageContent == null) ? 0 : (messageContent.length() - 250);
+        return "Message exceeds 250 characters by " + excess + ", please reduce size.";
+    }
+
+    // Send/Disregard/Store actions
     public String SentMessage(String action) {
         switch (action) {
-            case "1": // Send
-                if (!checkMessageLength()) {
-                    return "❌ Message too long. Max 250 characters.";
-                }
-                totalMessages++;
-                allMessages += "Message " + totalMessages + ": " + messageContent + "\n";
+            case "1":
+                if (!checkMessageLength()) return getMessageLengthFeedback();
                 storeMessageJSON();
-                return "Message successfully sent.";
-            case "2": // Disregard
+                return "Message sent successfully.\nID: " + messageID + "\nHash: " + messageHash;
+            case "2":
                 return "Message disregarded.";
-            case "3": // Store
+            case "3":
                 storeMessageJSON();
-                return "Message successfully stored.";
+                return "Message stored for later.\nID: " + messageID + "\nHash: " + messageHash;
             default:
                 return "Invalid action.";
         }
     }
 
-    // ----------------------------
     // Store message in JSON file
-    // ----------------------------
     private void storeMessageJSON() {
         String jsonString = "{"
-            + "\"senderUsername\":\"" + escapeJson(senderUsername) + "\","
-            + "\"senderFullName\":\"" + escapeJson(senderFullName) + "\","
-            + "\"recipientCell\":\"" + escapeJson(recipientCell) + "\","
-            + "\"messageContent\":\"" + escapeJson(messageContent) + "\","
-            + "\"messageNumber\":" + messageNumber + ","
-            + "\"messageID\":\"" + messageID + "\""
-            + "}";
+                + "\"senderUsername\":\"" + escapeJson(senderUsername) + "\","
+                + "\"senderFullName\":\"" + escapeJson(senderFullName) + "\","
+                + "\"recipientCell\":\"" + escapeJson(recipientCell) + "\","
+                + "\"messageContent\":\"" + escapeJson(messageContent) + "\","
+                + "\"messageNumber\":" + messageNumber + ","
+                + "\"messageID\":\"" + escapeJson(messageID) + "\","
+                + "\"messageHash\":\"" + escapeJson(messageHash) + "\""
+                + "}";
         try (FileWriter writer = new FileWriter(JSON_FILE, true)) {
-            writer.write(jsonString + "\n");
+            writer.write(jsonString + System.lineSeparator());
         } catch (IOException e) {
             System.out.println("Failed to store message: " + e.getMessage());
         }
     }
 
-    // ----------------------------
-    // Read stored messages
-    // ----------------------------
-    public static String readStoredMessages() {
-        StringBuilder sb = new StringBuilder();
-        try (BufferedReader br = new BufferedReader(new FileReader(JSON_FILE))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                sb.append(line).append("\n");
-            }
-        } catch (IOException e) {
-            return "No stored messages found.";
-        }
-        return sb.toString();
+    private String escapeJson(String s) {
+        if (s == null) return "";
+        return s.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
-    private String escapeJson(String str) {
-        return str.replace("\"", "\\\"");
-    }
-
-    // ----------------------------
-    // 5️⃣ printMessages()
-    // ----------------------------
-    public static String printMessages() {
-        if (allMessages.isEmpty()) {
-            return "No messages sent yet.";
-        }
-        return allMessages;
-    }
-
-    // ----------------------------
-    // 6️⃣ returnTotalMessages()
-    // ----------------------------
-    public static int returnTotalMessages() {
-        return totalMessages;
-    }
-
-    // ----------------------------
-    // Optional: message length check
-    // ----------------------------
-    public boolean checkMessageLength() {
-        return messageContent.length() <= 250;
-    }
-
-    public String getMessageLengthFeedback() {
-        if (checkMessageLength()) {
-            return "Message ready to send.";
-        } else {
-            int excess = messageContent.length() - 250;
-            return "❌ Message too long. Max 250 characters. Reduce by " + excess + " characters.";
-        }
-    }
-
-    // ----------------------------
-    // Optional: message details
-    // ----------------------------
+    // Details output
     public String getMessageDetails() {
-        return "Message ID: " + messageID + "\n" +
-               "Message Hash: " + createMessageHash() + "\n" +
+        return "MessageID: " + messageID + "\n" +
+               "Message Hash: " + messageHash + "\n" +
                "Recipient: " + recipientCell + "\n" +
                "Message: " + messageContent;
     }
 
-    // ----------------------------
-    // Static validation methods
-    // ----------------------------
-    public static boolean checkRecipientCellStatic(String recipientCell) {
-        return recipientCell != null && recipientCell.matches("^\\+27\\d{9}$");
+    // Getters
+    public String getSenderUsername() { return senderUsername; }
+    public String getSenderFullName() { return senderFullName; }
+    public String getRecipientCell() { return recipientCell; }
+    public String getMessageContent() { return messageContent; }
+    public int getMessageNumber() { return messageNumber; }
+    public String getMessageID() { return messageID; }
+    public String getMessageHash() { return messageHash; }
+
+    // ------------------------------------------------------------
+    // Setter methods (added for tests)
+    // ------------------------------------------------------------
+    public void setMessageContent(String content) {
+        this.messageContent = content;
+        this.messageHash = createMessageHash(); // recompute hash
     }
 
-    public static boolean checkMessageLengthStatic(String messageContent) {
-        return messageContent != null && messageContent.length() <= 250;
+    public void setMessageID(String id) {
+        this.messageID = id;
+        this.messageHash = createMessageHash(); // recompute hash
     }
 }

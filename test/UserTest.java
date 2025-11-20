@@ -18,49 +18,45 @@ public class UserTest {
     @Test
     public void testCheckUserName() {
         User user = new User("ky_1", "Ch&&sec@ke99", "+27838968976", "Kyle", "Smith");
-        assertTrue(user.checkUserName());
+        assertTrue(user.checkUserName(), "Username should contain '_' and be <= 5 characters.");
     }
 
     @Test
     public void testCheckPasswordComplexity() {
         User user = new User("ky_1", "Ch&&sec@ke99", "+27838968976", "Kyle", "Smith");
-        assertTrue(user.checkPasswordComplexity());
+        assertTrue(user.checkPasswordComplexity(), "Password should meet complexity requirements.");
     }
 
     @Test
     public void testCheckCellPhoneNumber() {
         User user = new User("ky_1", "Ch&&sec@ke99", "+27838968976", "Kyle", "Smith");
-        assertTrue(user.checkCellPhoneNumber());
+        assertTrue(user.checkCellPhoneNumber(), "Cell number should be valid (+27 followed by 9 digits).");
     }
 
     @Test
-    public void testGetUsernameFeedback() {
+    public void testLoginUserSuccess() {
         User user = new User("ky_1", "Ch&&sec@ke99", "+27838968976", "Kyle", "Smith");
-        assertEquals(user.getUsernameFeedback(), "Username successfully captured.");
+        assertTrue(user.loginUser("ky_1", "Ch&&sec@ke99"), "Login should succeed with correct credentials.");
     }
 
     @Test
-    public void testGetPasswordFeedback() {
+    public void testLoginUserFailure() {
         User user = new User("ky_1", "Ch&&sec@ke99", "+27838968976", "Kyle", "Smith");
-        assertEquals(user.getPasswordFeedback(), "Password successfully captured.");
+        assertFalse(user.loginUser("wrong", "wrong"), "Login should fail with incorrect credentials.");
     }
 
     @Test
-    public void testGetCellNumberFeedback() {
+    public void testReturnLoginStatusSuccess() {
         User user = new User("ky_1", "Ch&&sec@ke99", "+27838968976", "Kyle", "Smith");
-        assertEquals(user.getCellNumberFeedback(), "Cell phone number successfully added.");
+        String expected = "Welcome Kyle,Smith it is great to see you again.";
+        assertEquals(user.returnLoginStatus("ky_1", "Ch&&sec@ke99"), expected);
     }
 
     @Test
-    public void testLoginUser() {
+    public void testReturnLoginStatusFailure() {
         User user = new User("ky_1", "Ch&&sec@ke99", "+27838968976", "Kyle", "Smith");
-        assertTrue(user.loginUser("ky_1", "Ch&&sec@ke99"));
-    }
-
-    @Test
-    public void testReturnLoginStatus() {
-        User user = new User("ky_1", "Ch&&sec@ke99", "+27838968976", "Kyle", "Smith");
-        assertEquals(user.returnLoginStatus("ky_1", "Ch&&sec@ke99"), "Welcome Kyle Smith, it is great to see you again.");
+        String expected = "Username or password incorrect, please try again.";
+        assertEquals(user.returnLoginStatus("wrong", "wrong"), expected);
     }
 
     @Test
@@ -73,5 +69,17 @@ public class UserTest {
     public void testGetUsername() {
         User user = new User("ky_1", "Ch&&sec@ke99", "+27838968976", "Kyle", "Smith");
         assertEquals(user.getUsername(), "ky_1");
+    }
+
+    @Test
+    public void testGetPassword() {
+        User user = new User("ky_1", "Ch&&sec@ke99", "+27838968976", "Kyle", "Smith");
+        assertEquals(user.getPassword(), "Ch&&sec@ke99");
+    }
+
+    @Test
+    public void testGetCellNumber() {
+        User user = new User("ky_1", "Ch&&sec@ke99", "+27838968976", "Kyle", "Smith");
+        assertEquals(user.getCellNumber(), "+27838968976");
     }
 }

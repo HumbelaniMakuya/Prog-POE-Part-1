@@ -2,220 +2,221 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-import java.util.Scanner;
+import java.util.*;
 import javax.swing.JOptionPane;
+import java.io.BufferedReader;
+import java.io.FileReader;
 
 public class LoginApp {
-    public static void main(String[] args) {
-        Scanner scanner = new Scanner(System.in);
+    static Scanner scanner = new Scanner(System.in);
 
+    static List<Message> sentMessages = new ArrayList<>();
+    static List<Message> disregardedMessages = new ArrayList<>();
+    static List<Message> storedMessages = new ArrayList<>();
+
+    // Dual I/O helpers (used only after login)
+    public static String getInput(String prompt) {
+        String input = JOptionPane.showInputDialog(null, prompt);
+        if (input != null && !input.trim().isEmpty()) {
+            return input.trim();
+        }
+        System.out.print(prompt + " ");
+        return scanner.nextLine().trim();
+    }
+
+    public static void showMessage(String message) {
+        JOptionPane.showMessageDialog(null, message);
+        System.out.println(message);
+    }
+
+    public static void main(String[] args) {
+        // -------------------------------
+        // Registration (console only)
+        // -------------------------------
         System.out.println("=== Welcome to the registration portal ===");
 
-        // -------------------------------
-        // Registration
-        // -------------------------------
         System.out.print("Enter your first name: ");
-        String firstName = scanner.nextLine();
+        String firstName = scanner.nextLine().trim();
 
         System.out.print("Enter your last name: ");
-        String lastName = scanner.nextLine();
+        String lastName = scanner.nextLine().trim();
 
-        // Username
         String username;
         while (true) {
             System.out.print("Create a username (must contain '_' and <= 5 characters): ");
-            username = scanner.nextLine();
+            username = scanner.nextLine().trim();
             if (User.checkUserNameStatic(username)) {
-                System.out.println("✅ Username successfully captured.");
+                System.out.println("Username successfully captured.");
                 break;
             } else {
-                System.out.println("❌ Invalid username. Must contain '_' and <= 5 characters.");
+                System.out.println("Invalid username format.");
             }
         }
 
-        // Password
         String password;
         while (true) {
-            System.out.print("Create a password (min 8 chars, 1 uppercase, 1 number, 1 special char): ");
+            System.out.print("Create a password (min 8 chars, include uppercase, lowercase, number, special char): ");
             password = scanner.nextLine();
             if (User.checkPasswordComplexityStatic(password)) {
-                System.out.println("✅ Password successfully captured.");
+                System.out.println("Password successfully captured.");
                 break;
             } else {
-                System.out.println("❌ Invalid password. Try again.");
+                System.out.println("Invalid password format.");
             }
         }
 
-        // Cell number
         String cellNumber;
         while (true) {
-            System.out.print("Enter your cell number (must start with +27): ");
+            System.out.print("Enter your cell number (+27XXXXXXXXX): ");
             cellNumber = scanner.nextLine();
             if (User.checkCellPhoneNumberStatic(cellNumber)) {
-                System.out.println("✅ Cell number successfully added.");
+                System.out.println("Cell phone number successfully added.");
                 break;
             } else {
-                System.out.println("❌ Invalid cell number. Must start with +27.");
+                System.out.println("Invalid cell number format.");
             }
         }
 
         User user = new User(username, password, cellNumber, firstName, lastName);
 
         // -------------------------------
-        // Strict login
+        // Login (console only)
         // -------------------------------
-        boolean loggedIn = false;
         System.out.println("\n=== Login ===");
-
-        // Username first
         while (true) {
             System.out.print("Enter username: ");
-            String inputUsername = scanner.nextLine();
-            if (inputUsername.equals(user.getUsername())) {
-                System.out.println("✅ Username is correct.");
+            String iu = scanner.nextLine();
+            System.out.print("Enter password: ");
+            String ip = scanner.nextLine();
+            if (user.loginUser(iu, ip)) {
+                System.out.println("Welcome " + user.getFirstName() + "," + user.getLastName() + " it is great to see you again.");
+                // First popup after login
+                showMessage("Login successful! Welcome " + user.getFullName());
                 break;
             } else {
-                System.out.println("❌ Incorrect username. Try again.");
-            }
-        }
-
-        // Then password
-        while (!loggedIn) {
-            System.out.print("Enter password: ");
-            String inputPassword = scanner.nextLine();
-            if (inputPassword.equals(user.getPassword())) {
-                loggedIn = true;
-                System.out.println("✅ Login successful.");
-            } else {
-                System.out.println("❌ Incorrect password. Try again.");
+                System.out.println("Username or password incorrect, please try again.");
             }
         }
 
         // -------------------------------
-        // Welcome
+        // ChatApp (dual console + popups)
         // -------------------------------
-        String welcomeMsg = "Welcome to QuickChat.";
-        System.out.println("\n" + welcomeMsg);
-        JOptionPane.showMessageDialog(null, welcomeMsg, "Welcome", JOptionPane.INFORMATION_MESSAGE);
+        showMessage("Welcome to QuickChat.");
 
-        // -------------------------------
-        // Message limit
-        // -------------------------------
         int messageLimit = 0;
         while (true) {
-            System.out.print("How many messages would you like to send today? ");
             try {
-                messageLimit = Integer.parseInt(scanner.nextLine());
+                messageLimit = Integer.parseInt(getInput("How many messages would you like to send today?"));
                 if (messageLimit > 0) break;
-            } catch (Exception e) {}
-            System.out.println("❌ Please enter a valid positive number.");
-            JOptionPane.showMessageDialog(null, "❌ Please enter a valid positive number.", "Invalid Input", JOptionPane.WARNING_MESSAGE);
+            } catch (Exception ignored) {}
+            showMessage("Please enter a valid positive number.");
         }
 
         int messageCount = 0;
 
-        // -------------------------------
         // Menu loop
-        // -------------------------------
         while (true) {
-            String menu = "Choose an option:\n1) Send Messages\n2) Show Recently Sent Messages\n3) Quit";
-            System.out.println("\n" + menu);
-
-            String choice = JOptionPane.showInputDialog(null, menu, "QuickChat Menu", JOptionPane.QUESTION_MESSAGE);
-            if (choice == null) choice = "3"; // treat cancel as quit
-
-            System.out.println("You selected option: " + choice);
+            String menu = "Choose an option:\n"
+                    + "1) Send Messages\n"
+                    + "2) Show Recently Sent Messages\n"
+                    + "3) Quit\n"
+                    + "4) View sender + recipient\n"
+                    + "5) Longest message\n"
+                    + "6) Search by Message ID\n"
+                    + "7) Search by recipient\n"
+                    + "8) Delete message by hash\n"
+                    + "9) Full Message Report\n"
+                    + "10) Load Stored Messages (JSON)";
+            String choice = getInput(menu);
 
             switch (choice) {
-                case "1":
+                case "1": {
                     if (messageCount >= messageLimit) {
-                        String limitMsg = "🚫 You’ve reached your message limit for today.";
-                        System.out.println(limitMsg);
-                        JOptionPane.showMessageDialog(null, limitMsg, "Limit Reached", JOptionPane.WARNING_MESSAGE);
+                        showMessage("You’ve reached your message limit for today.");
                         break;
                     }
-
-                    // Recipient
-                    String recipient;
-                    while (true) {
-                        String recipientPrompt = "Enter recipient cell number (+27xxxxxxxxx):";
-                        System.out.println(recipientPrompt);
-                        recipient = JOptionPane.showInputDialog(null, recipientPrompt, "Recipient", JOptionPane.QUESTION_MESSAGE);
-                        if (recipient == null) break;
-                        System.out.println("Recipient entered: " + recipient);
-                        if (Message.checkRecipientCellStatic(recipient)) break;
-                        String msg = "❌ Invalid cell number. Try again.";
-                        System.out.println(msg);
-                        JOptionPane.showMessageDialog(null, msg, "Invalid Input", JOptionPane.WARNING_MESSAGE);
+                    String recipient = getInput("Enter recipient cell number (+27XXXXXXXXX):");
+                    if (!recipient.matches("^\\+27\\d{9}$")) {
+                        showMessage("Invalid recipient number.");
+                        break;
                     }
-                    if (recipient == null) break;
-
-                    // Message content
-                    String messageContent;
-                    while (true) {
-                        String messagePrompt = "Enter your message (max 250 characters):";
-                        System.out.println(messagePrompt);
-                        messageContent = JOptionPane.showInputDialog(null, messagePrompt, "Message Content", JOptionPane.QUESTION_MESSAGE);
-                        if (messageContent == null) break;
-                        System.out.println("Message entered: " + messageContent);
-                        if (Message.checkMessageLengthStatic(messageContent)) break;
-                        String msg = "❌ Message too long. Max 250 characters.";
-                        System.out.println(msg);
-                        JOptionPane.showMessageDialog(null, msg, "Message Too Long", JOptionPane.WARNING_MESSAGE);
+                    String messageContent = getInput("Enter your message (max 250 characters):");
+                    if (messageContent.length() > 250) {
+                        showMessage("Message too long. Please keep under 250 characters.");
+                        break;
                     }
-                    if (messageContent == null) break;
-
-                    Message message = new Message(username, user.getFullName(), recipient, messageContent, messageCount + 1);
-
-                    // Show details
-                    String messageDetails = message.getMessageDetails();
-                    System.out.println("\n📨 Message Details:\n" + messageDetails);
-                    JOptionPane.showMessageDialog(null, messageDetails, "📨 Message Details", JOptionPane.INFORMATION_MESSAGE);
-
-                    // Action
-                    String action;
-                    while (true) {
-                        String actionMenu = "Choose what to do with this message:\n1) Send Message\n2) Disregard Message\n3) Store Message for later";
-                        System.out.println(actionMenu);
-                        action = JOptionPane.showInputDialog(null, actionMenu, "Message Action", JOptionPane.QUESTION_MESSAGE);
-                        if (action == null) break;
-                        action = action.trim();
-                        System.out.println("You selected action: " + action);
-                        if (action.equals("1") || action.equals("2") || action.equals("3")) break;
-                        String msg = "❌ Invalid option. Enter 1, 2, or 3.";
-                        System.out.println(msg);
-                        JOptionPane.showMessageDialog(null, msg, "Invalid Action", JOptionPane.WARNING_MESSAGE);
-                    }
-                    if (action == null) break;
-
-                    String result = message.SentMessage(action);
-                    System.out.println(result);
-                    JOptionPane.showMessageDialog(null, result, "Message Status", JOptionPane.INFORMATION_MESSAGE);
-
-                    if (result.equals("Message successfully sent.")) {
-                        messageCount++;
-                    }
+                    Message message = new Message(user.getUsername(), user.getFullName(), recipient, messageContent, messageCount + 1);
+                    showMessage(message.getMessageDetails());
+                    String action = getInput("Choose action:\n1) Send\n2) Disregard\n3) Store");
+                    showMessage(message.SentMessage(action));
+                    if (action.equals("1")) { sentMessages.add(message); messageCount++; }
+                    else if (action.equals("2")) { disregardedMessages.add(message); }
+                    else if (action.equals("3")) { storedMessages.add(message); }
                     break;
-
-                case "2":
-                    // Placeholder for future feature
-                    String comingSoon = "Coming Soon.";
-                    System.out.println(comingSoon);
-                    JOptionPane.showMessageDialog(null, comingSoon, "Feature Pending", JOptionPane.INFORMATION_MESSAGE);
-                    break;
-
-                case "3":
-                    String goodbye = "Goodbye, " + firstName + "! Total messages sent: " + messageCount;
-                    System.out.println(goodbye);
-                    JOptionPane.showMessageDialog(null, goodbye, "Exit", JOptionPane.INFORMATION_MESSAGE);
-                    scanner.close();
-                    return;
-
-                default:
-                    String invalid = "❌ Invalid option. Choose 1, 2, or 3.";
-                    System.out.println(invalid);
-                    JOptionPane.showMessageDialog(null, invalid, "Invalid Choice", JOptionPane.WARNING_MESSAGE);
+                }
+                case "2": MessageReport.showRecentlySentMessages(sentMessages, 5); break;
+                case "3": showMessage("Goodbye, " + user.getFirstName() + "! Total messages sent: " + messageCount); return;
+                case "4": MessageReport.displaySendersAndRecipients(sentMessages, user.getFullName()); break;
+                case "5": MessageReport.displayLongestMessage(sentMessages); break;
+                case "6": MessageReport.searchByMessageID(sentMessages, getInput("Enter Message ID:")); break;
+                case "7": MessageReport.searchMessagesForRecipient(sentMessages, getInput("Enter recipient number:")); break;
+                case "8": MessageReport.deleteMessageUsingHash(sentMessages, getInput("Enter Message Hash:")); break;
+                case "9": MessageReport.displayMessageReport(sentMessages); break;
+                case "10": loadStoredMessagesFromJSON(); break;
+                default: showMessage("Invalid option. Choose 1–10.");
             }
         }
+    }
+
+    // JSON loading (unchanged, uses showMessage for output)
+    public static void loadStoredMessagesFromJSON() {
+        int loaded = 0;
+        try (BufferedReader reader = new BufferedReader(new FileReader("stored_messages.json"))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                Map<String, String> obj = parseJsonLine(line);
+                Message m = new Message(
+                        obj.getOrDefault("senderUsername", ""),
+                        obj.getOrDefault("senderFullName", ""),
+                        obj.getOrDefault("recipientCell", ""),
+                        obj.getOrDefault("messageContent", ""),
+                        parseIntSafe(obj.get("messageNumber"), 0),
+                        obj.getOrDefault("messageID", ""),
+                        obj.getOrDefault("messageHash", "")
+                );
+                storedMessages.add(m);
+                loaded++;
+            }
+            showMessage("Loaded " + loaded + " stored messages from JSON.");
+        } catch (Exception e) {
+            showMessage("No stored messages found or error reading file.");
+        }
+    }
+
+    private static Map<String, String> parseJsonLine(String json) {
+        Map<String, String> map = new HashMap<>();
+        if (json == null) return map;
+        String trimmed = json.trim();
+        if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+            trimmed = trimmed.substring(1, trimmed.length() - 1);
+        }
+        String[] pairs = trimmed.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)");
+        for (String p : pairs) {
+            String[] kv = p.split(":(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", 2);
+            if (kv.length == 2) {
+                String key = kv[0].trim().replaceAll("^\"|\"$", "");
+                String val = kv[1].trim();
+                if (val.startsWith("\"") && val.endsWith("\"")) {
+                    val = val.substring(1, val.length() - 1);
+                }
+                val = val.replace("\\\"", "\"").replace("\\\\", "\\");
+                map.put(key, val);
+            }
+        }
+        return map;
+    }
+
+    private static int parseIntSafe(String s, int def) {
+        try { return Integer.parseInt(s); } catch (Exception e) { return def; }
     }
 }
